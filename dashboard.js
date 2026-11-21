@@ -67,7 +67,7 @@ function getFreezeRequests(){return readLocal(FREEZE_KEY,[]);}
 function getSections(){let s=readLocal(SECTIONS_KEY,null);if(!Array.isArray(s)){s=[{id:"cubs",name:"Cubs",units:[]},{id:"bulbuls",name:"Bulbuls",units:[]},{id:"scouts",name:"Scouts",units:[]},{id:"guides",name:"Guides",units:[]}];writeLocal(SECTIONS_KEY,s);}return s;}
 const superGroups=[
  ["ADMIN MANAGEMENT",[["users","Admin Management"],["patrolAccounts","Patrol Leader Accounts"],["approvals","Administrator Approvals"],["loginIds","Login ID Registry"],["accounts","Account Controls"]]],
- ["PORTAL MANAGEMENT",[["gallery","Photo & Video Gallery"],["reviewGallery","Gallery Review Queue"],["circularsManage","Notifications & Circulars"],["slideshow","Homepage Slides"],["events","Events & Activities"],["instantPopup","Instant Announcements"],["settings","Portal Settings"],["notificationsSend","Send Notifications"]]],
+ ["PORTAL MANAGEMENT",[["gallery","Photo & Video Gallery"],["reviewGallery","Gallery Review Queue"],["circularsManage","Notifications & Circulars"],["slideshow","Homepage Slides"],["header","Header"],["events","Events & Activities"],["instantPopup","Instant Announcements"],["settings","Portal Settings"],["notificationsSend","Send Notifications"]]],
  ["MONITORING",[["reports","Reports & Analytics"],["logs","Activity Logs"]]]
 ];
 const superItems=superGroups.flatMap(group=>group[1]);
@@ -112,6 +112,7 @@ async function showView(view){
  if(isSuper&&view==="reviewGallery")return reviewGallery();
  if(isSuper&&view==="events")return eventManagement();
  if(isSuper&&view==="slideshow")return manageSlideshow();
+ if(isSuper&&view==="header")return managePortalHeader();
  if(isSuper&&view==="approvals")return adminApprovals();
  if(isSuper&&view==="loginIds")return loginIds();
  if(isSuper&&view==="accounts")return accountControls();
@@ -496,9 +497,34 @@ async function renderSharedEventTable(){
  root.querySelectorAll("[data-event-toggle],[data-event-delete]").forEach(b=>b.addEventListener("click",async()=>{const row=rows.find(x=>x.id===b.dataset.eventToggle||x.id===b.dataset.eventDelete);if(!row)return;if(b.dataset.eventDelete&&!confirm("Delete this event?"))return;const patch=b.dataset.eventDelete?null:{status:String(row.status).toLowerCase()==="published"?"draft":"Published"};const result=b.dataset.eventDelete?await client.from("events").delete().eq("id",row.id):await client.from("events").update(patch).eq("id",row.id);if(result.error){alert(result.error.message);return;}logAction(b.dataset.eventDelete?"Deleted event":patch.status+" event",row.title);await renderSharedEventTable();}));
 }
 
+
+async function managePortalHeader(){
+ if(!isSuper){alert("Only the Super Administrator can manage the header.");return;}
+ const client=window.oymsSupabase;
+ const {data:rows,error}=await client.from("homepage_slides").select("id,image_path,created_at").eq("title","__PORTAL_HEADER__").order("created_at",{ascending:false}).limit(1);
+ if(error){main.innerHTML='<h1>Header</h1><div class="dash-alert">Header settings could not be loaded: '+esc(error.message)+'</div>';return;}
+ const current=rows?.[0],url=current?client.storage.from("homepage-slides").getPublicUrl(current.image_path).data.publicUrl:"";
+ main.innerHTML='<h1>Header</h1><p>Upload one image to replace the public website header. The image automatically resizes for desktop and mobile. No text is placed over the image. Homepage slides below the header remain unchanged.</p><div class="dash-alert"><b>Single-image header:</b> Only one header image is active at a time. Uploading a new image replaces the previous one.</div><form id="portalHeaderForm" class="dash-panel"><div class="dash-field full"><label for="portalHeaderImage">Choose header image (JPG, PNG or WebP)</label><input id="portalHeaderImage" type="file" accept="image/jpeg,image/png,image/webp" required><small class="field-help">Wide landscape artwork recommended. Maximum 32 MB; image is automatically resized.</small></div><div id="portalHeaderStatus" class="slide-upload-status">Choose an image and select Replace Header.</div><button class="dash-primary" id="portalHeaderUpload" type="submit">Replace Header Image</button></form><h2>Current Header</h2><div class="dash-panel">'+(url?'<img src="'+esc(url)+'" alt="Current portal header" style="display:block;width:100%;max-height:240px;object-fit:contain;background:#f5f1f8;border-radius:10px">':'<div class="dash-empty">Default school header is currently displayed.</div>')+(current?'<button class="dash-danger" id="removePortalHeader" type="button">Remove Header Image</button>':'')+'</div>';
+ document.getElementById("portalHeaderForm").addEventListener("submit",async e=>{
+  e.preventDefault();const file=document.getElementById("portalHeaderImage").files?.[0],btn=document.getElementById("portalHeaderUpload"),status=document.getElementById("portalHeaderStatus");
+  if(!file)return; if(!["image/jpeg","image/png","image/webp"].includes(file.type)){status.textContent="Choose JPG, PNG or WebP.";return;}
+  if(file.size>32*1024*1024){status.textContent="Image must be 32 MB or smaller.";return;}
+  btn.disabled=true;status.textContent="Resizing and uploading…";let path="";
+  try{
+   const bitmap=await createImageBitmap(file),scale=Math.min(1,1920/bitmap.width,650/bitmap.height),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));const ctx=canvas.getContext("2d");ctx.fillStyle="#ffffff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingQuality="high";ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+   const blob=await new Promise((resolve,reject)=>canvas.toBlob(v=>v?resolve(v):reject(new Error("Image resize failed")),"image/jpeg",.86));const upload=new File([blob],"portal-header.jpg",{type:"image/jpeg"});if(upload.size>10*1024*1024)throw new Error("Resized image exceeds 10 MB.");
+   path="headers/"+crypto.randomUUID()+".jpg";const up=await client.storage.from("homepage-slides").upload(path,upload,{contentType:"image/jpeg",upsert:false,cacheControl:"3600"});if(up.error)throw up.error;
+   const ins=await client.from("homepage_slides").insert({title:"__PORTAL_HEADER__",subtitle:"",image_path:path,sort_order:-999,is_active:true,expires_at:null});if(ins.error){await client.storage.from("homepage-slides").remove([path]);throw ins.error;}
+   if(current){await client.from("homepage_slides").update({is_active:false}).eq("id",current.id);await client.storage.from("homepage-slides").remove([current.image_path]);}
+   status.textContent="Header image updated. Refresh the public website to view it.";logAction("Updated portal header","Single image");await managePortalHeader();
+  }catch(err){status.textContent="Header upload failed: "+(err.message||"Please try again.");btn.disabled=false;}
+ });
+ document.getElementById("removePortalHeader")?.addEventListener("click",async()=>{if(!confirm("Remove the current header image and restore the default header?"))return;await client.from("homepage_slides").update({is_active:false}).eq("id",current.id);await client.storage.from("homepage-slides").remove([current.image_path]);await managePortalHeader();});
+}
+
 async function orderedHomepageSlides(){
  const client=window.oymsSupabase;if(!client)throw new Error("Shared database connection is unavailable.");
- const {data,error}=await client.from("homepage_slides").select("id,title,subtitle,image_path,sort_order,is_active,expires_at,created_at").order("sort_order",{ascending:true}).order("created_at",{ascending:true});
+ const {data,error}=await client.from("homepage_slides").select("id,title,subtitle,image_path,sort_order,is_active,expires_at,created_at").neq("title","__PORTAL_HEADER__").order("sort_order",{ascending:true}).order("created_at",{ascending:true});
  if(error)throw error;return data||[];
 }
 function setSlideUploadStatus(message,type){

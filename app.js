@@ -33,13 +33,17 @@ async function initUpcomingProgrammes(){
   root.innerHTML=published.map(x=>{const d=new Date(x.event_date+"T00:00:00"),details=[x.event_type,x.venue].filter(Boolean).map(esc).join(" · ");return '<article class="upcoming-programme-card"><time datetime="'+esc(x.event_date)+'"><b>'+d.getDate()+'</b><span>'+d.toLocaleDateString("en-IN",{month:"short",year:"numeric"})+'</span></time><div class="upcoming-programme-copy"><h3>'+esc(x.title||"School Programme")+'</h3><p>'+details+'</p>'+(x.description?'<small>'+esc(x.description)+'</small>':"")+'</div></article>';}).join("");
  }catch(error){console.error("Upcoming programmes could not be rendered.",error);renderUpcomingEmptyState(root,"Published programme information is temporarily unavailable.");}
 }
+async function initPortalHeaderImage(){
+ try{const client=window.oymsSupabase;if(!client)return;const {data,error}=await client.from("homepage_slides").select("image_path,created_at").eq("title","__PORTAL_HEADER__").eq("is_active",true).order("created_at",{ascending:false}).limit(1).maybeSingle();if(error||!data)return;const url=client.storage.from("homepage-slides").getPublicUrl(data.image_path).data.publicUrl;const head=document.querySelector(".school-masthead");if(head&&url){head.classList.add("portal-header-image-mode");head.style.setProperty("--portal-header-image","url("+JSON.stringify(url)+")");}}
+ catch(e){console.warn("Custom header unavailable; using default masthead.",e);}
+}
 async function initHeroSlideshow(){
  const track=document.querySelector(".slide-track"),dotsRoot=document.querySelector(".slide-dots"),hero=track?.closest(".hero-slideshow");
  if(!track||!dotsRoot||!hero)return;
  try{
   const client=window.oymsSupabase;if(!client)throw new Error("Shared slideshow service is unavailable.");
   const now=new Date().toISOString();
-  const {data:rows,error}=await client.from("homepage_slides").select("id,title,subtitle,image_path,sort_order,expires_at").eq("is_active",true).or("expires_at.is.null,expires_at.gt."+now).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
+  const {data:rows,error}=await client.from("homepage_slides").select("id,title,subtitle,image_path,sort_order,expires_at").eq("is_active",true).neq("title","__PORTAL_HEADER__").or("expires_at.is.null,expires_at.gt."+now).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
   if(error)throw error;
   track.replaceChildren();
   (rows||[]).forEach((item,index)=>{
@@ -123,6 +127,7 @@ function initSidebarNavigation(){
 document.addEventListener("DOMContentLoaded",()=>{
  initSidebarNavigation();
  initTemporaryMenuLinks();
+ initPortalHeaderImage();
  initHeroSlideshow();
  initUpcomingProgrammes();
  renderPublicCirculars();

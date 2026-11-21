@@ -1370,3 +1370,40 @@ a:focus-visible,button:focus-visible{outline:3px solid #c084fc;outline-offset:3p
 @media(prefers-reduced-motion:reduce){
  .sidebar-links a{transition:none}
 }
+
+
+/* Fix: force the public MENU drawer to render purple with readable white text */
+#portalSidebar.site-sidebar{
+  background:linear-gradient(160deg,#6b21a8 0%,#512080 52%,#32104f 100%) !important;
+  color:#fff !important;
+  border-right:4px solid #e9bb4d !important;
+}
+#portalSidebar .sidebar-heading,
+#portalSidebar .sidebar-heading strong,
+#portalSidebar .sidebar-heading span,
+#portalSidebar .sidebar-footnote{
+  background:transparent !important;
+  color:#fff !important;
+}
+#portalSidebar .sidebar-links a,
+#portalSidebar .sidebar-links a:visited{
+  background:rgba(255,255,255,.13) !important;
+  color:#fff !important;
+  border-color:rgba(255,255,255,.3) !important;
+}
+#portalSidebar .sidebar-links a > span{color:#ffe08a !important}
+#portalSidebar .sidebar-links a:hover,
+#portalSidebar .sidebar-links a:focus-visible{
+  background:rgba(255,255,255,.25) !important;
+  color:#fff !important;
+}
+#portalSidebar .sidebar-links .sidebar-login,
+#portalSidebar .sidebar-links .sidebar-login > span{
+  background:#f2c14e !important;
+  color:#32104f !important;
+}
+#menuToggle{
+  background:#5b168c !important;
+  color:#fff !important;
+  border:1px solid #e9bb4d !important;
+}

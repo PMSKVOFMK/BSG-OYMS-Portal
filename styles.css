@@ -1314,3 +1314,59 @@ a:focus-visible,button:focus-visible{outline:3px solid #c084fc;outline-offset:3p
 .kvs-more-dropdown a{display:block!important;color:#4b0d78!important;padding:12px 15px!important;border-bottom:1px solid #f0eaf5;font-size:12px!important;text-decoration:none}
 .kvs-more-dropdown a:hover{background:#f5eff9!important;color:#4b0d78!important}
 @media(max-width:760px){.kvs-more-menu>summary{padding:12px 10px;font-size:11px}.kvs-more-dropdown{position:fixed;top:auto;left:auto;right:12px;min-width:190px}}
+
+
+/* Brighter, high-contrast KVS/BSG-inspired menu */
+.site-sidebar{
+ background:
+  radial-gradient(circle at 12% 0%,rgba(255,255,255,.20),transparent 30%),
+  radial-gradient(circle at 100% 72%,rgba(245,190,66,.18),transparent 28%),
+  linear-gradient(155deg,#6d28d9 0%,#5520a8 48%,#32106f 100%);
+ border-right:4px solid #f2c14e;
+ box-shadow:14px 0 38px rgba(25,10,65,.34);
+}
+.sidebar-heading{
+ padding:12px 8px 19px;
+ border-bottom:1px solid rgba(255,255,255,.42);
+}
+.sidebar-heading span{color:#ffe08a;text-shadow:0 1px 8px rgba(0,0,0,.18)}
+.sidebar-heading strong{font-size:18px;letter-spacing:.1px}
+.sidebar-heading button{
+ background:rgba(255,255,255,.20);
+ border:1px solid rgba(255,255,255,.7);
+ box-shadow:0 3px 12px rgba(20,8,55,.2);
+}
+.sidebar-links{gap:7px;padding:17px 2px}
+.sidebar-links a{
+ padding:12px 13px;
+ border:1px solid rgba(255,255,255,.18);
+ background:rgba(255,255,255,.105);
+ color:#fff;
+ box-shadow:0 2px 8px rgba(24,7,62,.10);
+}
+.sidebar-links a:hover,.sidebar-links a:focus-visible{
+ background:rgba(255,255,255,.26);
+ border-color:rgba(255,224,138,.9);
+ box-shadow:0 4px 14px rgba(18,5,49,.2);
+ transform:translateX(4px);
+}
+.sidebar-links a>span{color:#ffe08a}
+.sidebar-links .sidebar-login{
+ margin-top:9px;
+ background:linear-gradient(100deg,#ffd76a,#f4b942);
+ color:#32105f;
+ border:1px solid #fff0b8;
+ box-shadow:0 5px 16px rgba(12,5,40,.25);
+}
+.sidebar-links .sidebar-login>span{color:#32105f}
+.sidebar-links .sidebar-external{
+ background:rgba(255,255,255,.16);
+ border-color:rgba(255,255,255,.35);
+}
+.sidebar-footnote{
+ border-top:1px solid rgba(255,255,255,.4);
+ color:#fff1c8;
+}
+@media(prefers-reduced-motion:reduce){
+ .sidebar-links a{transition:none}
+}

@@ -1407,3 +1407,16 @@ a:focus-visible,button:focus-visible{outline:3px solid #c084fc;outline-offset:3p
   color:#fff !important;
   border:1px solid #e9bb4d !important;
 }
+
+
+/* Contact form must be completed only on the separate Google Forms tab */
+.google-form-frame,
+.contact-form-fallback{display:none!important}
+.contact-form-note{font-size:0!important}
+.contact-form-note::after{
+  content:"The form opens in a separate tab. It cannot be filled in on this website.";
+  display:inline;
+  font-size:12px;
+  line-height:1.5;
+  color:inherit;
+}
